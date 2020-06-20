@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js'></script>
+        <script src="https://unpkg.com/vue"></script>
+    </head>
+    <body>
+        <div id='landing'>
+            <input type = 'text' v-model="nickname" placeholder="nickname"></input>
+            <input type = 'text' v-model="roomname" placeholder="roomname"></input>
+            <input type = 'text' v-model="password" placeholder="password"></input>
+            <button v-on:click="createRoom">create</button>
+            <button v-on:click="joinRoom">join</button>
+            <p>{{status}}</p>
+        </div>
+        <div id='field'>
+            <h1>{{mode}}</h1>
+            <input type = 'text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
+            <button v-on:click="sendMessage">send</button>
+            <p id = 'messages'>{{messages}}</p>
+            <button v-on:click="toggle">toggle</button>
+        </div>
+    </body>
+    <script language="javascript" type="text/javascript" src="style.js"></script>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "mafia",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodemon": "^2.0.4",
+    "socket-io": "^1.0.0",
+    "socket.io": "^2.3.0",
+    "socketio-wildcard": "^2.0.0",
+    "vue": "^2.6.11",
+    "vue-cli": "^2.9.6"
+  }
+}
