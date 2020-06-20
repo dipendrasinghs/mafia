@@ -35,14 +35,66 @@ let restartWarningHour = 10
 let restartWarningMinute = 50
 let restartWarningSecond = 2
 
+var events = require('events');
+const { start } = require('repl');
 
 class Room {
 	constructor(name, pass) {
 		this.room = '' + name
 		this.password = '' + pass
 		this.players = {}
-		this.game = new Game()
+		this.lock = false
+		this.game = new Game(this)
+		this.playersStats = new events.EventEmitter()
+		this.gameEvents = new events.EventEmitter()
 		ROOM_LIST[this.room] = this
+		this.initialize()
+	}
+
+	initialize(){
+		this.playersStats.on('playerJoined', (stat)=>{
+			io.to(this.room).emit('totalPlayersResponse', this.getPlayerNames())
+		})
+	
+		this.playersStats.on('playerLeft', (stat)=>{
+			io.to(this.room).emit('totalPlayersResponse', this.getPlayerNames())
+		})
+
+		this.gameEvents.on('newGame', ()=>{
+			io.to(this.room).emit('newGameResponse', true)
+		})
+
+		this.gameEvents.on('startGame', (counts)=>{
+			if(this.lock){
+				console.log("room is locked")
+				io.to(this.room).emit('startGameResponse', {
+					success: false,
+					msg: 'Room is locked'
+				})
+			}
+			else{
+				this.game.start(counts)
+				io.to(this.room).emit('startGameResponse', {
+					success: true,
+					msg: 'Go on'
+				})
+			}
+		})
+	}
+
+	getPlayerNames(){
+		let names = []
+		let players = this.players
+		for(let player in players){
+			names.push(players[player].nickname)
+		}
+		return names
+	}
+
+	remove(){
+		console.log("Deleting: "+this.room)
+		this.playersStats.removeAllListeners()
+		this.gameEvents.removeAllListeners()
 	}
 }
 
@@ -91,7 +143,8 @@ io.sockets.on('connection', function (socket) {
 				SOCKET_LIST[p].emit('msg', {
 					from: socket.id,
 					ts: Date.now(),
-					nickname: player.nickname
+					nickname: player.nickname,
+					textMessage: msg
 				})
 			}
 		}
@@ -101,12 +154,37 @@ io.sockets.on('connection', function (socket) {
 		if (!PLAYER_LIST[socket.id]) return
 		PLAYER_LIST[socket.id].afktimer = PLAYER_LIST[socket.id].timeout
 	})
-
 	socket.on('createRoom', (data) => { createRoom(socket, data) })
 	socket.on('joinRoom', (data) => { joinRoom(socket, data) })
-
+	socket.on('disconnect', ()=>{leaveRoom(socket)})
+	socket.on('newGame', ()=>{ newGame(socket)})
+	socket.on('startGame', (counts)=>{startGame(counts, socket)})
+	socket.on('startNewGame', ()=>{startNewGame(socket)})
 })
 
+
+function newGame(socket){
+	ROOM_LIST[PLAYER_LIST[socket.id].room].gameEvents.emit('newGame') 
+}
+
+function startGame(counts, socket){
+	room = ROOM_LIST[PLAYER_LIST[socket.id].room]
+	if (room.locked){
+		socket.emit('startGameResponse', {
+			success: false,
+			msg: 'Room is locked'
+		})
+	}
+	else{
+		ROOM_LIST[PLAYER_LIST[socket.id].room].gameEvents.emit('startGame', counts)
+	}
+}
+
+function startNewGame(socket){
+	room = ROOM_LIST[PLAYER_LIST[socket.id].room]
+	room.lock = false
+	room.gameEvents.emit('newGame')
+}
 
 function createRoom(socket, data) {
 	let roomName = data.room.trim()
@@ -123,10 +201,16 @@ function createRoom(socket, data) {
 			if (userName === '') {
 				socket.emit('createResponse', { success: false, msg: 'Enter A Valid Nickname' })
 			} else {
-				new Room(roomName, passName)
+				room = new Room(roomName, passName)
 				let player = new Player(userName, roomName, socket)
 				ROOM_LIST[roomName].players[socket.id] = player
+				console.log('Room created:'+roomName)
+				socket.join(roomName)
 				socket.emit('createResponse', { success: true, msg: "you are " + player.role + " and name is: " + player.nickname + " and id is: " + player.id })// Tell client creation was successful
+				room.playersStats.emit('playerJoined', {
+					id: socket.id, 
+					room: roomName
+				})
 			}
 		}
 	}
@@ -150,14 +234,18 @@ function joinRoom(socket, data) {
 			} 
 			else {
 				let player = new Player(userName, roomName, socket)
+				let room = ROOM_LIST[roomName]
 				ROOM_LIST[roomName].players[socket.id] = player
+				socket.join(roomName)
 				socket.emit('joinResponse', { success: true, msg: "you are: " + player.role + " and name is: " + player.nickname })   // Tell client join was successful
+				room.playersStats.emit('playerJoined', {
+					id: socket.id, 
+					room: roomName
+				})
 			}
 		}
 	}
 }
-
-
 
 setInterval(() => {
 	let time = new Date()
@@ -179,17 +267,28 @@ setInterval(() => {
 }, 1000)
 
 function leaveRoom(socket) {
+	console.log("here is left")
 	if (!PLAYER_LIST[socket.id]) return
 	let player = PLAYER_LIST[socket.id]
 	delete PLAYER_LIST[player.id]
 	delete ROOM_LIST[player.room].players[player.id]
+	console.log(Object.keys(ROOM_LIST[player.room].players).length)
+	let room = ROOM_LIST[player.room]
+	room.playersStats.emit('playerLeft', {
+		id: socket.id, 
+		room: player.room
+	})
 	if (Object.keys(ROOM_LIST[player.room].players).length === 0) {
-		delete ROOM_LIST[player.room]
+		deleteRoom(player.room)
 	}
+	socket.leave(player.room)
 	socket.emit('leaveResponse', { success: true })
 }
 
-
+function deleteRoom(room){
+	ROOM_LIST[room].remove()
+	delete ROOM_LIST[room]
+}
 function appRestart() {
 
 }

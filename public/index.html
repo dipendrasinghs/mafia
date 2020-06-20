@@ -5,7 +5,7 @@
         <script src="https://unpkg.com/vue"></script>
     </head>
     <body>
-        <div id='landing'>
+        <div id='landing' v-show='visible'>
             <input type = 'text' v-model="nickname" placeholder="nickname"></input>
             <input type = 'text' v-model="roomname" placeholder="roomname"></input>
             <input type = 'text' v-model="password" placeholder="password"></input>
@@ -13,12 +13,25 @@
             <button v-on:click="joinRoom">join</button>
             <p>{{status}}</p>
         </div>
-        <div id='field'>
+        <div id='lobby' v-show='visible'>
+            <input type = 'text' v-model="mafiaCount" placeholder="mafia"></input>
+            <input type = 'text' v-model="healerCount" placeholder="healer"></input>
+            <input type = 'text' v-model="detectiveCount" placeholder="detective"></input>
+            <ul>
+                <li v-for="player in players">
+                  {{ player }}
+                </li>
+              </ul>
+            <button v-on:click="startGame">Create</button>
+            <p>{{status}}</p>
+        </div>
+        <div id='field' v-show='visible'>
             <h1>{{mode}}</h1>
             <input type = 'text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
             <button v-on:click="sendMessage">send</button>
             <p id = 'messages'>{{messages}}</p>
             <button v-on:click="toggle">toggle</button>
+            <button v-on:click="newGame">New Game</button>
         </div>
     </body>
     <script language="javascript" type="text/javascript" src="style.js"></script>
