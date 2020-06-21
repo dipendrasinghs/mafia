@@ -18,13 +18,6 @@ io.use(middleware)
 
 const Game = require('./game.js')
 
-TT = {}
-TT['m1'] = 'mafia'
-TT['m2'] = 'mafia'
-TT['m3'] = 'mafia'
-TT['d1'] = 'detective'
-TT['d2'] = 'detective'
-
 SOCKET_LIST = {}
 PLAYER_LIST = {}
 ROOM_LIST = {}
@@ -68,20 +61,27 @@ class Room {
 		this.gameEvents.on('startGame', (data)=>{
 			let counts = data.counts
 			let initiater = SOCKET_LIST[data.initiater]
-			if(counts.mafiaCount >= Object.keys(this.players).length - counts.mafiaCount){
+			if(counts.mafiaCount == 0){
 				initiater.emit('startGameResponse', {
 					success: false,
-					msg: 'Mafia should be less than other people'
+					msg: '#Mafia cannot be zero'
 				})
 			}
 			else if(counts.mafiaCount + counts.healerCount + counts.detectiveCount > Object.keys(this.players).length){
-				console.log(JSON.stringify(counts) + "and "+Object.keys(this.players).length)
+				console.log(JSON.stringify(counts) + " and total: "+Object.keys(this.players).length)
 				initiater.emit('startGameResponse', {
 					success: false,
-					msg: 'Role counts are greater than total players'
+					msg: 'not enough players'
+				})
+			}
+			else if(counts.mafiaCount >= Object.keys(this.players).length - counts.mafiaCount){
+				initiater.emit('startGameResponse', {
+					success: false,
+					msg: '#Mafia should be less than other people'
 				})
 			}
 			else{
+				// console.log(this.room+" strar")
 				this.game.start(counts)
 				io.to(this.room).emit('startGameResponse', {
 					success: true,
@@ -113,7 +113,7 @@ class Player {
 		this.ss = socket
 		this.room = room
 		this.nickname = this.getLegitName(nickname)
-		this.role = TT[nickname]
+		this.role = ''
 		this.timeout = 2100         // (35min)
 		this.afktimer = this.timeout
 		this.dead = false
@@ -295,6 +295,12 @@ function leaveRoom(socket) {
 	if (Object.keys(ROOM_LIST[player.room].players).length === 0) {
 		deleteRoom(player.room)
 	}
+	console.log("killing + "+player.id)
+	try {
+		ROOM_LIST[player.room].game.kill(player.id)
+	}catch(err){
+		console.log("room was not available to kill the game")
+	}
 	socket.leave(player.room)
 	socket.emit('leaveResponse', { success: true })
 }
@@ -305,9 +311,15 @@ function deleteRoom(room){
 }
 
 function appRestart() {
-
+	for (let socket in SOCKET_LIST){
+    SOCKET_LIST[socket].emit('serverMessage', {msg:"Server Successfully Restarted for Maintnence"})
+    SOCKET_LIST[socket].emit('leaveResponse', {success:true})
+  }
+  heroku.delete('/apps/codenames-plus/dynos/').then(app => {})
 }
 
 function appRestartWarning() {
-
+	for (let player in PLAYER_LIST){
+    SOCKET_LIST[player].emit('serverMessage', {msg:"Scheduled Server Restart in 10 Minutes"})
+  }
 }

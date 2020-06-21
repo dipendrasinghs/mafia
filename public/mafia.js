@@ -1,4 +1,11 @@
 let socket = io()
+var nav = new Vue({
+    el: '#navigation',
+    data: {
+        role:'',
+        name: ''
+    }
+});
 var field = new Vue({
     el: '#field',
     data:{
@@ -53,6 +60,7 @@ var field = new Vue({
 
         socket.on('roleAssign', (role)=>{
             this.role = role
+            setRole(role)
         })
 
         socket.on('voteAgainst', (voteAgainst)=>{
@@ -110,22 +118,25 @@ var landing = new Vue({
         }
     },
     created(){
-
         socket.on('createResponse', (data)=>{
             if(data.success){
+                setName(this.nickname)
                 this.proceedToLobby()
                 this.status = data.status + ' ' + data.msg
             }
             else{
+                statusAlerts(data.msg)
                 this.status = data.status + ' ' + data.msg
             }
         })
         socket.on('joinResponse', (data)=>{
             if(data.success){
+                setName(this.nickname)
                 this.proceedToLobby()
                 this.status = data.status + ' ' + data.msg
             }
             else{
+                statusAlerts(data.msg)
                 this.status = data.status + ' ' + data.msg
             }
         })
@@ -136,18 +147,18 @@ var lobby = new Vue({
     el: '#lobby',
     data:{
         players:[],
-        mafiaCount: 0,
-        healerCount: 0,
-        detectiveCount: 0, 
+        mafiaCount: '',
+        healerCount: '',
+        detectiveCount: '', 
         status:'',
         visible: false
     }, 
     methods:{
         startGame: function(){
             socket.emit('startGame', {
-                mafiaCount: parseInt(this.mafiaCount),
-                healerCount: parseInt(this.healerCount),
-                detectiveCount: parseInt(this.detectiveCount)
+                mafiaCount: parseInt(this.mafiaCount) || 0,
+                healerCount: parseInt(this.healerCount) || 0,
+                detectiveCount: parseInt(this.detectiveCount) || 0
             })
         },
         proceedToField: function(){
@@ -162,10 +173,12 @@ var lobby = new Vue({
         })
 
         socket.on('startGameResponse', (data)=>{
+            console.log(JSON.stringify(data))
             if(data.success){
                 this.proceedToField()
             }
             else{
+                statusAlerts(data.msg)
                 this.status =  data.msg
             }
         })
@@ -179,7 +192,40 @@ function proceedToLobby(){
 }
 
 function proceedToField(){
+    console.log("this happened")
     lobby.visible = false
     landing.visible = false
     field.visible = true
+}
+
+$.notify.addStyle('statusAlerts', {
+    html: "<div><span data-notify-text/></div>",
+    classes: {
+      base: {
+        "white-space": "nowrap",
+        "background-color": "#091918",
+        "padding": "15px",
+        "margin-top":"75px",
+        "border": "1px solid #ff1010"
+      },
+      alert: {
+        
+      }
+    }
+  });
+
+function setRole(role){
+    nav.role = role
+}
+
+function setName(name){
+    nav.name = name
+}
+
+function statusAlerts(message){
+    $('.notifyjs-corner').empty();
+    $.notify(message.toLowerCase(), {
+        style: 'statusAlerts',
+        className: 'alert'
+      });
 }

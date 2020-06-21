@@ -1,49 +1,127 @@
 <html>
-    <head>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-        <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js'></script>
-        <script src="https://unpkg.com/vue"></script>
-    </head>
-    <body>
-        <div id='landing' v-show='visible'>
-            <input type = 'text' v-model="nickname" placeholder="nickname"></input>
-            <input type = 'text' v-model="roomname" placeholder="roomname"></input>
-            <input type = 'text' v-model="password" placeholder="password"></input>
-            <button v-on:click="createRoom">create</button>
-            <button v-on:click="joinRoom">join</button>
-            <p>{{status}}</p>
-        </div>
-        <div id='lobby' v-show='visible'>
-            <input type = 'number' v-model="mafiaCount" placeholder="mafia"></input>
-            <input type = 'number' v-model="healerCount" placeholder="healer"></input>
-            <input type = 'number' v-model="detectiveCount" placeholder="detective"></input>
-            <ul>
-                <li v-for="player in players">
-                  {{ player }}
-                </li>
-              </ul>
-            <button v-on:click="startGame">Create</button>
-            <p>{{status}}</p>
-        </div>
-        <div id='field' v-show='visible'>
-            <h1>I am: {{role}}</h1>
-            <h1>Sleeping: {{sleeping}}</h1>
-            <div id = 'chatroom'>
-                <input type = 'text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
-                <button v-on:click="sendMessage">send</button>
-                <p v-for="message in messages">
-                    {{message.from}}: {{ message.textMessage }}
-                </p>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js'></script>
+    <script src="https://unpkg.com/vue"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.scss">
+</head>
+
+<body>
+    <div class='notifications top-left'></div>
+    <div id="navigation">
+        <a href="">mafia.</a>
+        <span style="position: absolute; bottom:0;left:0;font:15px Raleway;padding:5px" v-if="name !== ''">hi, {{name}}</span>
+        <span style="position: absolute; bottom:0;right:0;font:15px Raleway;padding:5px" v-if="role !== ''">you are: {{role}}</span>
+
+    </div>
+    <div class="container" id='landing' v-if='visible'>
+        <div class="row d-flex justify-content-center">
+            <div class="col-lg-5 col-md-10 col-sm-10 col-xs-10 registration-form">
+                <form>
+                    <div class="Input">
+                        <input type="text" v-model="nickname" class="Input-text form-control item"
+                            placeholder="nickname">
+                        <div for="input" class="Input-label col-lg-12 col-md-12 col-sm-12">nickname</div>
+                    </div>
+                    <div class="Input">
+                        <input type="text" v-model="roomname" class="Input-text form-control item" placeholder="room">
+                        <label for="input" class="Input-label col-lg-12 col-md-12 col-sm-12">room</label>
+                    </div>
+                    <div class="Input">
+                        <input type="password" v-model="password" class="Input-text form-control item"
+                            placeholder="password">
+                        <label for="input" class="Input-label col-lg-12 col-md-12 col-sm-12">password</label>
+                    </div>
+                    <div class="form-group">
+                        <div class='row d-flex justify-content-center'>
+                            <button type="button" v-on:click="joinRoom" id="join-room"
+                                class="btn btn-block landing-button col-lg-5 col-md-10 col-sm-10 form-control">join
+                                room</button>
+                            <button type="button" v-on:click="createRoom"
+                                class="btn btn-block landing-button col-lg-5 col-md-10 col-sm-10 form-control">create
+                                room</button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div v-for="player in voteAgainst">
-                <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
-                <label>{{ player.nickname }}</label>
-            </div>
-            <p>{{announcement}}</p>
-            <button v-on:click="sendVote">Send Vote</button>
-            <button v-on:click="toggle">toggle</button>
-            <button v-on:click="newGame" v-show='gameOver'>New Game</button>
         </div>
-    </body>
-    <script language="javascript" type="text/javascript" src="style.js"></script>
+    </div>
+
+
+    <div id='lobby' v-if='visible' class='container'>
+        <div class='row'>
+            <div class='col-lg-3 col-md-3 col-sm-12' style="text-align:center;margin:auto">configure: </div>
+            <div class='col-lg-3 col-md-3 col-sm-12'>
+                <div class="Input" style="margin:auto">
+                    <input type="number" v-model="mafiaCount" class="Input-text form-control item" placeholder="#mafia">
+                    <label for="input" class="Input-label">#mafia</label>
+                </div>
+            </div>
+            <div class='col-lg-3 col-md-3 col-sm-12'>
+                <div class="Input" style="margin:auto">
+                    <input type="number" v-model="detectiveCount" class="Input-text form-control item" placeholder="#detective">
+                    <label for="input" class="Input-label">#detective</label>
+                </div>
+            </div>
+            <div class='col-lg-3 col-md-3 col-sm-12'>
+                <div class="Input" style="margin:auto">
+                    <input type="number" v-model="healerCount" class="Input-text form-control item" placeholder="#healer">
+                    <label for="input" class="Input-label">#healer</label>
+                </div>
+            </div>
+        </div>
+       <div class="row d-flex justify-content-center" style="margin-top: 35px;">
+        <ul class="col-lg-4 col-md-4 col-sm-6">
+            <div style="text-align: center;font-size: 25px;">
+                online:
+            </div>
+            <li v-for="player in players" style="font-size: 16px;">
+                {{ player }}
+            </li>
+        </ul>
+    </div>
+    <div class="row d-flex justify-content-center">
+        <button type="button" v-on:click="startGame"
+        class="btn btn-block landing-button col-lg-3 col-md-3 col-sm-3  form-control" id="get_a_room">get a village</button>
+    </div>
+    </div>
+    </div>
+    
+    <div id='field' v-if='visible'>
+        <h1>I am: {{role}}</h1>
+        <h1>Sleeping: {{sleeping}}</h1>
+        <div id='chatroom'>
+            <input type='text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
+            <button v-on:click="sendMessage">send</button>
+            <p v-for="message in messages">
+                {{message.from}}: {{ message.textMessage }}
+            </p>
+        </div>
+        <div v-for="player in voteAgainst">
+            <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
+            <label>{{ player.nickname }}</label>
+        </div>
+        <p>{{announcement}}</p>
+        <button v-on:click="sendVote">Send Vote</button>
+        <button v-on:click="toggle">toggle</button>
+        <button v-on:click="newGame" v-show='gameOver'>New Game</button>
+    </div>
+</body>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+
+<script src="https://code.jquery.com/jquery-3.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js"></script>
+<script language="javascript" type="text/javascript" src="mafia.js"></script>
+
 </html>
