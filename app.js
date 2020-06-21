@@ -65,24 +65,29 @@ class Room {
 			io.to(this.room).emit('newGameResponse', true)
 		})
 
-		this.gameEvents.on('startGame', (counts)=>{
-			if(counts.mafiaCount >= Object.keys(this.players) - counts.mafiaCount){
-				io.to(this.room).emit('startGameResponse', {
+		this.gameEvents.on('startGame', (data)=>{
+			let counts = data.counts
+			let initiater = SOCKET_LIST[data.initiater]
+			if(counts.mafiaCount >= Object.keys(this.players).length - counts.mafiaCount){
+				initiater.emit('startGameResponse', {
 					success: false,
 					msg: 'Mafia should be less than other people'
 				})
 			}
-			if(counts.mafiaCount + counts.healerCount + counts.detectiveCount > Object.keys(this.players)){
-				io.to(this.room).emit('startGameResponse', {
+			else if(counts.mafiaCount + counts.healerCount + counts.detectiveCount > Object.keys(this.players).length){
+				console.log(JSON.stringify(counts) + "and "+Object.keys(this.players).length)
+				initiater.emit('startGameResponse', {
 					success: false,
 					msg: 'Role counts are greater than total players'
 				})
 			}
-			this.game.start(counts)
-			io.to(this.room).emit('startGameResponse', {
-				success: true,
-				msg: 'Go on'
-			})
+			else{
+				this.game.start(counts)
+				io.to(this.room).emit('startGameResponse', {
+					success: true,
+					msg: 'Go on'
+				})
+			}
 		})
 	}
 
@@ -184,7 +189,10 @@ function startGame(counts, socket){
 		})
 	}
 	else{
-		ROOM_LIST[PLAYER_LIST[socket.id].room].gameEvents.emit('startGame', counts)
+		ROOM_LIST[PLAYER_LIST[socket.id].room].gameEvents.emit('startGame', {
+			counts: counts,
+			initiater: socket.id
+		})
 	}
 }
 

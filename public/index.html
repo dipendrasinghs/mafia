@@ -14,9 +14,9 @@
             <p>{{status}}</p>
         </div>
         <div id='lobby' v-show='visible'>
-            <input type = 'text' v-model="mafiaCount" placeholder="mafia"></input>
-            <input type = 'text' v-model="healerCount" placeholder="healer"></input>
-            <input type = 'text' v-model="detectiveCount" placeholder="detective"></input>
+            <input type = 'number' v-model="mafiaCount" placeholder="mafia"></input>
+            <input type = 'number' v-model="healerCount" placeholder="healer"></input>
+            <input type = 'number' v-model="detectiveCount" placeholder="detective"></input>
             <ul>
                 <li v-for="player in players">
                   {{ player }}

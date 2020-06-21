@@ -145,9 +145,9 @@ var lobby = new Vue({
     methods:{
         startGame: function(){
             socket.emit('startGame', {
-                mafiaCount: this.mafiaCount,
-                healerCount: this.healerCount,
-                detectiveCount: this.detectiveCount
+                mafiaCount: parseInt(this.mafiaCount),
+                healerCount: parseInt(this.healerCount),
+                detectiveCount: parseInt(this.detectiveCount)
             })
         },
         proceedToField: function(){
