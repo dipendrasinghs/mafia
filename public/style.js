@@ -2,10 +2,15 @@ let socket = io()
 var field = new Vue({
     el: '#field',
     data:{
-        mode: 'mafia',
+        role: '',
         textMessage: '',
-        messages: '', 
-        visible: false
+        messages: [],
+        visible: false,
+        sleeping: true, 
+        voteAgainst: [],
+        announcement: '', 
+        gameOver: '',
+        picked: ''
     },
     methods:{
         sendMessage: function(){
@@ -19,16 +24,23 @@ var field = new Vue({
 
         newGame: function(){
             socket.emit('startNewGame')
+            this.gameOver = false
+            this.messages = []
+            this.announcement = ''
         },
 
         proceedToLobby: function(){
             proceedToLobby()
+        }, 
+
+        sendVote: function(){
+            socket.emit('vote', this.picked)
         }
     },
 
     created(){
         socket.on('msg', (msg) => {
-            this.messages = this.messages + msg.textMessage
+            this.messages.push(msg)
         })
 
         socket.on('gameStats', (data)=>{
@@ -37,6 +49,34 @@ var field = new Vue({
 
         socket.on('newGameResponse', ()=>{
             this.proceedToLobby()
+        })
+
+        socket.on('roleAssign', (role)=>{
+            this.role = role
+        })
+
+        socket.on('voteAgainst', (voteAgainst)=>{
+            this.voteAgainst = voteAgainst
+        })
+
+        socket.on('sleep', ()=>{
+            this.sleeping = true
+        })
+
+        socket.on('wakeup', ()=>{
+            this.sleeping = false
+        })
+
+        socket.on('announcement', (announcement)=>{
+            this.announcement = this.announcement + ' <br>' + announcement
+        })
+
+        socket.on('gameOver', ()=>{
+            this.gameOver = true
+        })
+        
+        socket.on('unvote', ()=>{
+            picked = ''
         })
     }
 });
@@ -70,6 +110,7 @@ var landing = new Vue({
         }
     },
     created(){
+
         socket.on('createResponse', (data)=>{
             if(data.success){
                 this.proceedToLobby()
@@ -114,6 +155,7 @@ var lobby = new Vue({
         }
     },
     created(){
+
         socket.on('totalPlayersResponse', (players)=>{
             console.log(JSON.stringify(players))
             this.players = players

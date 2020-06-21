@@ -26,12 +26,23 @@
             <p>{{status}}</p>
         </div>
         <div id='field' v-show='visible'>
-            <h1>{{mode}}</h1>
-            <input type = 'text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
-            <button v-on:click="sendMessage">send</button>
-            <p id = 'messages'>{{messages}}</p>
+            <h1>I am: {{role}}</h1>
+            <h1>Sleeping: {{sleeping}}</h1>
+            <div id = 'chatroom'>
+                <input type = 'text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
+                <button v-on:click="sendMessage">send</button>
+                <p v-for="message in messages">
+                    {{message.from}}: {{ message.textMessage }}
+                </p>
+            </div>
+            <div v-for="player in voteAgainst">
+                <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
+                <label>{{ player.nickname }}</label>
+            </div>
+            <p>{{announcement}}</p>
+            <button v-on:click="sendVote">Send Vote</button>
             <button v-on:click="toggle">toggle</button>
-            <button v-on:click="newGame">New Game</button>
+            <button v-on:click="newGame" v-show='gameOver'>New Game</button>
         </div>
     </body>
     <script language="javascript" type="text/javascript" src="style.js"></script>

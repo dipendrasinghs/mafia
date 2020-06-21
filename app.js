@@ -36,11 +36,12 @@ let restartWarningMinute = 50
 let restartWarningSecond = 2
 
 var events = require('events');
-const { start } = require('repl');
 
 class Room {
 	constructor(name, pass) {
+		this.io = io
 		this.room = '' + name
+		this.name = '' + name
 		this.password = '' + pass
 		this.players = {}
 		this.lock = false
@@ -65,20 +66,23 @@ class Room {
 		})
 
 		this.gameEvents.on('startGame', (counts)=>{
-			if(this.lock){
-				console.log("room is locked")
+			if(counts.mafiaCount >= Object.keys(this.players) - counts.mafiaCount){
 				io.to(this.room).emit('startGameResponse', {
 					success: false,
-					msg: 'Room is locked'
+					msg: 'Mafia should be less than other people'
 				})
 			}
-			else{
-				this.game.start(counts)
+			if(counts.mafiaCount + counts.healerCount + counts.detectiveCount > Object.keys(this.players)){
 				io.to(this.room).emit('startGameResponse', {
-					success: true,
-					msg: 'Go on'
+					success: false,
+					msg: 'Role counts are greater than total players'
 				})
 			}
+			this.game.start(counts)
+			io.to(this.room).emit('startGameResponse', {
+				success: true,
+				msg: 'Go on'
+			})
 		})
 	}
 
@@ -101,12 +105,14 @@ class Room {
 class Player {
 	constructor(nickname, room, socket) {
 		this.id = socket.id
+		this.ss = socket
 		this.room = room
 		this.nickname = this.getLegitName(nickname)
 		this.role = TT[nickname]
 		this.timeout = 2100         // (35min)
 		this.afktimer = this.timeout
 		this.dead = false
+		this.onDeathBed = false
 		PLAYER_LIST[socket.id] = this
 	}
 
@@ -137,16 +143,18 @@ io.sockets.on('connection', function (socket) {
 	socket.on('sendMsg', (msg) => {
 		player = PLAYER_LIST[socket.id]
 		role = player.role
-		playersInRoom = ROOM_LIST[player.room].players
-		for (let p in playersInRoom) {
-			if (PLAYER_LIST[p].role === role) {
-				SOCKET_LIST[p].emit('msg', {
-					from: socket.id,
-					ts: Date.now(),
-					nickname: player.nickname,
-					textMessage: msg
-				})
-			}
+		messageObj = {
+			from: socket.id,
+			ts: Date.now(),
+			nickname: player.nickname,
+			textMessage: msg
+		}
+		console.log("Daytime: "+ROOM_LIST[player.room].game.daytime+" playerroom: "+player.room+" role: "+role)
+		if(ROOM_LIST[player.room].game.daytime){
+			io.to(player.room).emit('msg', messageObj)
+		}
+		else{
+			io.to(player.room+role).emit('msg', messageObj)
 		}
 	})
 
@@ -169,7 +177,7 @@ function newGame(socket){
 
 function startGame(counts, socket){
 	room = ROOM_LIST[PLAYER_LIST[socket.id].room]
-	if (room.locked){
+	if (room.lock){
 		socket.emit('startGameResponse', {
 			success: false,
 			msg: 'Room is locked'
@@ -267,12 +275,10 @@ setInterval(() => {
 }, 1000)
 
 function leaveRoom(socket) {
-	console.log("here is left")
 	if (!PLAYER_LIST[socket.id]) return
 	let player = PLAYER_LIST[socket.id]
 	delete PLAYER_LIST[player.id]
 	delete ROOM_LIST[player.room].players[player.id]
-	console.log(Object.keys(ROOM_LIST[player.room].players).length)
 	let room = ROOM_LIST[player.room]
 	room.playersStats.emit('playerLeft', {
 		id: socket.id, 
@@ -289,6 +295,7 @@ function deleteRoom(room){
 	ROOM_LIST[room].remove()
 	delete ROOM_LIST[room]
 }
+
 function appRestart() {
 
 }
