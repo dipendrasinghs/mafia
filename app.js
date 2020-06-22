@@ -38,24 +38,35 @@ class Room {
 		this.password = '' + pass
 		this.players = {}
 		this.lock = false
-		this.game = new Game(this)
+		this.game
 		this.playersStats = new events.EventEmitter()
 		this.gameEvents = new events.EventEmitter()
 		ROOM_LIST[this.room] = this
 		this.initialize()
 	}
 
+	sendToAll(event, msg){
+		for(let p in this.players){
+			try{
+				SOCKET_LIST[p].emit(event, msg)
+			}catch{
+				console.error(p+" : not in socketlist")
+			}
+		}
+	}
+
 	initialize(){
 		this.playersStats.on('playerJoined', (stat)=>{
-			io.to(this.room).emit('totalPlayersResponse', this.getPlayerNames())
+			this.sendToAll('totalPlayersResponse', this.getPlayerNames())
 		})
 	
 		this.playersStats.on('playerLeft', (stat)=>{
-			io.to(this.room).emit('totalPlayersResponse', this.getPlayerNames())
+			this.sendToAll('totalPlayersResponse', this.getPlayerNames())
 		})
 
 		this.gameEvents.on('newGame', ()=>{
-			io.to(this.room).emit('newGameResponse', true)
+			console.log("sending it to all"+this.room)
+			this.sendToAll('newGameResponse', true)
 		})
 
 		this.gameEvents.on('startGame', (data)=>{
@@ -82,11 +93,17 @@ class Room {
 			}
 			else{
 				// console.log(this.room+" strar")
-				this.game.start(counts)
-				io.to(this.room).emit('startGameResponse', {
+
+			console.log("sending it to all"+this.room)
+				this.sendToAll('startGameResponse', {
 					success: true,
 					msg: 'Go on'
 				})
+				if(this.game){
+					delete this.game
+				}
+				this.game = new Game(this)
+				this.game.start(counts)
 			}
 		})
 	}
@@ -144,7 +161,20 @@ class Player {
 
 io.sockets.on('connection', function (socket) {
 	SOCKET_LIST[socket.id] = socket
+	socket.on('*', (data)=>{
+		console.info(data)
+	})
 
+	socket.on('vote', (person)=>{
+		player = PLAYER_LIST[socket.id]
+		let msg = player.nickname+" chose "+PLAYER_LIST[person].nickname
+		if(ROOM_LIST[player.room].game.daytime){
+			ROOM_LIST[player.room].sendToAll('update', msg)
+		}
+		else{
+			io.to(player.room+player.role).emit('update', msg)
+		}
+	})
 	socket.on('sendMsg', (msg) => {
 		player = PLAYER_LIST[socket.id]
 		role = player.role
@@ -156,7 +186,7 @@ io.sockets.on('connection', function (socket) {
 		}
 		console.log("Daytime: "+ROOM_LIST[player.room].game.daytime+" playerroom: "+player.room+" role: "+role)
 		if(ROOM_LIST[player.room].game.daytime){
-			io.to(player.room).emit('msg', messageObj)
+			ROOM_LIST[player.room].sendToAll('msg', messageObj)
 		}
 		else{
 			io.to(player.room+role).emit('msg', messageObj)
@@ -221,6 +251,7 @@ function createRoom(socket, data) {
 				let player = new Player(userName, roomName, socket)
 				ROOM_LIST[roomName].players[socket.id] = player
 				console.log('Room created:'+roomName)
+				console.log(userName+"joined"+roomName)
 				socket.join(roomName)
 				socket.emit('createResponse', { success: true, msg: "you are " + player.role + " and name is: " + player.nickname + " and id is: " + player.id })// Tell client creation was successful
 				room.playersStats.emit('playerJoined', {
@@ -252,8 +283,9 @@ function joinRoom(socket, data) {
 				let player = new Player(userName, roomName, socket)
 				let room = ROOM_LIST[roomName]
 				ROOM_LIST[roomName].players[socket.id] = player
+				console.log(userName+"joined"+roomName)
 				socket.join(roomName)
-				socket.emit('joinResponse', { success: true, msg: "you are: " + player.role + " and name is: " + player.nickname })   // Tell client join was successful
+				socket.emit('joinResponse', { success: true, msg: "you are: " + player.role + " and name is: " + player.nickname, name: player.nickname })   // Tell client join was successful
 				room.playersStats.emit('playerJoined', {
 					id: socket.id, 
 					room: roomName
@@ -295,12 +327,13 @@ function leaveRoom(socket) {
 	if (Object.keys(ROOM_LIST[player.room].players).length === 0) {
 		deleteRoom(player.room)
 	}
-	console.log("killing + "+player.id)
-	try {
-		ROOM_LIST[player.room].game.kill(player.id)
-	}catch(err){
-		console.log("room was not available to kill the game")
-	}
+	// console.log("killing + "+player.id)
+	// try {
+	// 	ROOM_LIST[player.room].game.kill(player.id)
+	// }catch(err){
+	// 	console.log("room was not available to kill the game")
+	// }
+	console.log(player.nickname+"left"+player.room)
 	socket.leave(player.room)
 	socket.emit('leaveResponse', { success: true })
 }

@@ -203,3 +203,9 @@ body {
 #navigation a{
   color:#d1c1a8;
 }
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

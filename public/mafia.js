@@ -1,4 +1,10 @@
 let socket = io()
+
+socket.on('*', (data)=>{
+    console.log(data)
+})
+
+
 var nav = new Vue({
     el: '#navigation',
     data: {
@@ -17,11 +23,25 @@ var field = new Vue({
         voteAgainst: [],
         announcement: '', 
         gameOver: '',
-        picked: ''
+        picked: '',
+        updates: []
+    },
+    mounted(){
+        role = ''
+        textMessage = ''
+        messages = []
+        visible = false
+        sleeping = true
+        voteAgainst = []
+        announcement = '' 
+        gameOver = ''
+        picked = ''
+        updates = []
     },
     methods:{
         sendMessage: function(){
-            socket.emit('sendMsg', this.textMessage)
+            if (role !== 'spectator' && !gameOver)
+                socket.emit('sendMsg', this.textMessage)
             this.textMessage = ''
         },
 
@@ -46,6 +66,10 @@ var field = new Vue({
     },
 
     created(){
+        socket.on('update', (update)=>{
+            this.updates.push(update)
+        })
+
         socket.on('msg', (msg) => {
             this.messages.push(msg)
         })
@@ -63,20 +87,23 @@ var field = new Vue({
             setRole(role)
         })
 
-        socket.on('voteAgainst', (voteAgainst)=>{
+        socket.on('voteAgainst', (voteAgainst) => {
             this.voteAgainst = voteAgainst
         })
 
         socket.on('sleep', ()=>{
+            console.log("sleep")
+            this.updates = []
             this.sleeping = true
         })
 
         socket.on('wakeup', ()=>{
+            console.log("wakeup")
             this.sleeping = false
         })
 
         socket.on('announcement', (announcement)=>{
-            this.announcement = this.announcement + ' <br>' + announcement
+            statusAlerts(announcement)
         })
 
         socket.on('gameOver', ()=>{
@@ -92,9 +119,9 @@ var field = new Vue({
 var landing = new Vue({
     el: '#landing',
     data:{
-        nickname:'',
-        roomname:'',
-        password:'',
+        nickname:'m1',
+        roomname:'h1',
+        password:'h1',
         status:'', 
         visible: true
     },
@@ -131,7 +158,7 @@ var landing = new Vue({
         })
         socket.on('joinResponse', (data)=>{
             if(data.success){
-                setName(this.nickname)
+                setName(data.name)
                 this.proceedToLobby()
                 this.status = data.status + ' ' + data.msg
             }
@@ -189,13 +216,15 @@ function proceedToLobby(){
     lobby.visible = true
     landing.visible = false
     field.visible = false
+    nav.role=''
 }
 
 function proceedToField(){
-    console.log("this happened")
+    // console.log("this happened")
     lobby.visible = false
     landing.visible = false
     field.visible = true
+    field.gameOver = false
 }
 
 $.notify.addStyle('statusAlerts', {

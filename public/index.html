@@ -13,8 +13,10 @@
     <div class='notifications top-left'></div>
     <div id="navigation">
         <a href="">mafia.</a>
-        <span style="position: absolute; bottom:0;left:0;font:15px Raleway;padding:5px" v-if="name !== ''">hi, {{name}}</span>
-        <span style="position: absolute; bottom:0;right:0;font:15px Raleway;padding:5px" v-if="role !== ''">you are: {{role}}</span>
+        <span style="position: absolute; bottom:0;left:0;font:15px Raleway;padding:5px" v-if="name !== ''">hi,
+            {{name}}</span>
+        <span style="position: absolute; bottom:0;right:0;font:15px Raleway;padding:5px" v-if="role !== ''">you are:
+            {{role}}</span>
 
     </div>
     <div class="container" id='landing' v-if='visible'>
@@ -51,7 +53,7 @@
     </div>
 
 
-    <div id='lobby' v-if='visible' class='container'>
+    <div id='lobby' class='container' v-if='visible'>
         <div class='row'>
             <div class='col-lg-3 col-md-3 col-sm-12' style="text-align:center;margin:auto">configure: </div>
             <div class='col-lg-3 col-md-3 col-sm-12'>
@@ -62,52 +64,72 @@
             </div>
             <div class='col-lg-3 col-md-3 col-sm-12'>
                 <div class="Input" style="margin:auto">
-                    <input type="number" v-model="detectiveCount" class="Input-text form-control item" placeholder="#detective">
+                    <input type="number" v-model="detectiveCount" class="Input-text form-control item"
+                        placeholder="#detective">
                     <label for="input" class="Input-label">#detective</label>
                 </div>
             </div>
             <div class='col-lg-3 col-md-3 col-sm-12'>
                 <div class="Input" style="margin:auto">
-                    <input type="number" v-model="healerCount" class="Input-text form-control item" placeholder="#healer">
+                    <input type="number" v-model="healerCount" class="Input-text form-control item"
+                        placeholder="#healer">
                     <label for="input" class="Input-label">#healer</label>
                 </div>
             </div>
         </div>
-       <div class="row d-flex justify-content-center" style="margin-top: 35px;">
-        <ul class="col-lg-4 col-md-4 col-sm-6">
-            <div style="text-align: center;font-size: 25px;">
-                online:
+        <div class="row d-flex justify-content-center" style="margin-top: 35px;">
+            <ul class="col-lg-4 col-md-4 col-sm-6">
+                <div style="text-align: center;font-size: 25px;">
+                    online:
+                </div>
+                <li v-for="player in players" style="font-size: 16px;">
+                    {{ player }}
+                </li>
+            </ul>
+        </div>
+        <div class="row d-flex justify-content-center">
+            <button type="button" v-on:click="startGame"
+                class="btn btn-block landing-button col-lg-3 col-md-3 col-sm-3  form-control" id="get_a_room">get a
+                village</button>
+        </div>
+    </div>
+    </div>
+
+    <div id='field' v-if='visible' class="container">
+        <div class="row sleeping">
+            {{sleeping}}
+        </div>
+
+        <div class="row battlefield" v-if="!sleeping">
+            <div class='col-lg-4 col-md-4 col-sm-4 chatroom'>
+                <div>
+                    <input type='text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
+                    <button v-on:click="sendMessage" v-if="role!='spectator' && !gameOver">send</button>
+                    <p v-for="message in messages">
+                        {{message.nickname}}: {{ message.textMessage }}
+                    </p>
+                </div>
             </div>
-            <li v-for="player in players" style="font-size: 16px;">
-                {{ player }}
-            </li>
-        </ul>
-    </div>
-    <div class="row d-flex justify-content-center">
-        <button type="button" v-on:click="startGame"
-        class="btn btn-block landing-button col-lg-3 col-md-3 col-sm-3  form-control" id="get_a_room">get a village</button>
-    </div>
-    </div>
-    </div>
-    
-    <div id='field' v-if='visible'>
-        <h1>I am: {{role}}</h1>
-        <h1>Sleeping: {{sleeping}}</h1>
-        <div id='chatroom'>
-            <input type='text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
-            <button v-on:click="sendMessage">send</button>
-            <p v-for="message in messages">
-                {{message.from}}: {{ message.textMessage }}
-            </p>
+            <div class='col-lg-4 col-md-4 col-sm-4 voteField' v-if="role!='spectator' && !gameOver">
+                <div>
+                <div v-for="player in voteAgainst">
+                    <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
+                    <label>{{ player.nickname }}</label>
+                </div>
+                <p>{{announcement}}</p>
+                <button v-on:click="sendVote">Send Vote</button>
+            </div>
+            </div>
+            <div class='col-lg-4 col-md-4 col-sm-4 updateField'>
+                <p v-for="update in updates">
+                     {{ update }}
+                </p>
+            </div>
+            
         </div>
-        <div v-for="player in voteAgainst">
-            <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
-            <label>{{ player.nickname }}</label>
+        <div class="row">
+            <button v-on:click="newGame" v-show='gameOver'>New Game</button>
         </div>
-        <p>{{announcement}}</p>
-        <button v-on:click="sendVote">Send Vote</button>
-        <button v-on:click="toggle">toggle</button>
-        <button v-on:click="newGame" v-show='gameOver'>New Game</button>
     </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
