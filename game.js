@@ -171,10 +171,10 @@ class Game {
         let playerName = this.players[player].nickname
         this.kill(player)
         if(isMafia){
-            this.makeAnnouncement('all', "Villagers kills :"+playerName+": who was a mafia")
+            this.makeAnnouncement('all', "Villagers kill :"+playerName+":")
         }
         else{
-            this.makeAnnouncement('all', "Villagers kills :"+playerName+": who was not a mafia")
+            this.makeAnnouncement('all', "Villagers kill :"+playerName+":")
         }
     }
 
@@ -368,7 +368,7 @@ class Game {
 
     gameOver(winner){
         this.unassignRoles()
-        this.makeAnnouncement('all', ":"+winner+": has won the game")
+        this.makeAnnouncement('all', ":"+winner+": have won the game")
         console.log("gameOver")
         this.over = true
         this.sendTo('all', 'gameOver')
