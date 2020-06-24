@@ -31,6 +31,7 @@ class Game {
         this.room.lock = true
         this.daytime = false
         this.roleMap = {}
+        this.votes = []
         this.unassignRoles()
         this.assignRoles(counts)
         this.notifyRoles()
@@ -179,6 +180,7 @@ class Game {
 
     startCycle(){
         if(!this.over){
+            this.votes = []
             this.gameEvents.emit('everyoneSleeps')
             // this.gameEvents.emit('mafiaWakesUp')
         }
