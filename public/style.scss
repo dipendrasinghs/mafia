@@ -52,6 +52,10 @@ body {
   padding: 50px 0;
 }
 
+.battlefield{
+  padding-top:30px;
+}
+
 .registration-form form {
   // border-color: #d1c1a8;
   border: 1px solid #d1c1a8;
@@ -93,6 +97,11 @@ body {
   background: transparent;
   color:  #d1c1a8;
   text-align: center;
+  text-decoration: underline;
+}
+
+.landing-button:focus{
+  border: none;
 }
 
 #get_a_room{
@@ -195,6 +204,7 @@ body {
   font-size: 30px;
   text-align: center;
   position: fixed;
+  z-index: 1;
   background-color: #091918; ;
   box-shadow: 3px 2px 15px #091918;
 }
@@ -208,4 +218,112 @@ input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.scroller {
+  flex-grow : 1;
+  display: flex;
+  height: 100%;
+  background: transparent;
+  border: none;
+  // margin-bottom: 100px;
+}
+
+.user {
+  // height: 32%;
+  padding: 0 12px;
+  display: block;
+  align-items: center;
+  background: transparent;
+}
+
+#chatroom{
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.h-70{
+  background: transparent;
+  height: 78%;
+}
+
+.messageWriter{
+  margin:10px;
+}
+
+.mytext{
+  margin: 5px;
+  float: right;
+  text-align: right;
+}
+
+.otherText{
+  margin: 5px;
+  text-align: left;
+  float: left;
+}
+
+.text{
+  font-size: 0.82em;
+  padding: 5px;
+  margin: 5px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  background-color: #091918;
+  width: 75%;
+}
+
+.textsender{
+  font-size: 0.56em;
+  color:#6D757D;
+  margin: 0;
+  margin-left: 5px;
+  display: block;
+  padding: 0px;
+}
+.textMessage{
+  clear: both;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+.updates{
+  background-color: 091918;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  text-align: center;
+  margin: auto;
+  border-bottom: 1px solid 6D757D;
+  clear:both;
+  padding: 10px;
+  font-size: 0.85em;
+  width: 80%;
+}
+
+.notifyjs-corner{
+  padding-top: 75px;;
+}
+
+.strikethrough:checked + .strikethis{
+  text-decoration:line-through;
+}
+
+button:focus {outline:0;}
+
+img {
+  max-width: 400px;
+  margin-top: 75;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
+}
+
+.sleeping{
+  align-items: center;
 }

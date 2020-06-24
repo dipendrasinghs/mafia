@@ -135,29 +135,33 @@ class Game {
             player.role = 'spectator'
             player.ss.join(this.getAddresser(player.role))
             player.ss.emit('roleAssign', 'spectator')
-            let mafia = 0
-            let other = 0
-            for(let p in this.players){
-                if(this.players[p].role === 'mafia'){
-                    mafia = mafia + 1
-                }
-                else if(this.players[p].role !== 'spectator'){
-                    other += 1
-                }
-            }
-            if (mafia > other){
-                console.log("game over")
-                this.over = true
-                this.gameEvents.emit('gameOver', 'mafia')
-            }
-            else if(mafia == 0){
-                console.log("game over")
-                this.over = true
-                this.gameEvents.emit('gameOver', 'villagers')
-            }
+            this.isGameOver()
         }
         catch(err){
             console.error("Couldnt kill"+playerid)
+        }
+    }
+
+    isGameOver(){
+        let mafia = 0
+        let other = 0
+        for(let p in this.players){
+            if(this.players[p].role === 'mafia'){
+                mafia = mafia + 1
+            }
+            else if(this.players[p].role !== 'spectator'){
+                other += 1
+            }
+        }
+        if (mafia > other){
+            console.log("game over")
+            this.over = true
+            this.gameEvents.emit('gameOver', 'mafia')
+        }
+        else if(mafia == 0){
+            console.log("game over")
+            this.over = true
+            this.gameEvents.emit('gameOver', 'villagers')
         }
     }
 
@@ -321,6 +325,7 @@ class Game {
     }
 
     everyOneWakesUp(){
+        this.isGameOver()
         let mafiaKilled = this.checkIfMafiaKilledSomeone()
         if(mafiaKilled == null){
             this.makeAnnouncement('all', 'No one was killed in the night')

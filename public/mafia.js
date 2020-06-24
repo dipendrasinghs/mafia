@@ -1,8 +1,28 @@
 let socket = io()
+let chatroom = document.getElementById("chatroom")
 
+// Vue.component('RecycleScroller', VueVirtualScroller.RecycleScroller)
 socket.on('*', (data)=>{
     console.log(data)
 })
+
+socket.on('afkWarning', (data)=>{
+    getConfirmation()
+})
+socket.on('afkKicked'), ()=>{
+    location.reload()
+}
+
+function getConfirmation() {
+    var retVal = confirm("Are you there?");
+    if( retVal == true ) {
+       socket.emit('stillhere')
+    } else {
+       return false;
+    }
+ }
+
+
 
 
 var nav = new Vue({
@@ -12,6 +32,10 @@ var nav = new Vue({
         name: ''
     }
 });
+
+
+
+
 var field = new Vue({
     el: '#field',
     data:{
@@ -22,9 +46,10 @@ var field = new Vue({
         sleeping: true, 
         voteAgainst: [],
         announcement: '', 
-        gameOver: '',
+        gameOver: false,
         picked: '',
-        updates: []
+        updates: [],
+        ts:''
     },
     mounted(){
         role = ''
@@ -38,11 +63,31 @@ var field = new Vue({
         picked = ''
         updates = []
     },
+    // watch:{
+    //     picked: function(){
+    //         disableVoting()
+    //         this.sendVote()
+    //     }
+    // },
     methods:{
+        isMyMessage(msg){
+            if(msg.nickname==getName())
+                return true
+            return false
+        },
+        scrollToBottom () {
+            this.$refs.scroller.scrollToBottom()
+        },
+
         sendMessage: function(){
-            if (role !== 'spectator' && !gameOver)
-                socket.emit('sendMsg', this.textMessage)
-            this.textMessage = ''
+            if(this.textMessage){
+                if(this.role === 'spectator' && (this.gameOver == false)){}
+                else{
+                    socket.emit('sendMsg', this.textMessage)
+                }
+                this.textMessage = ''
+                this.scrollToBottom()
+            }
         },
 
         toggle: function(){
@@ -61,17 +106,26 @@ var field = new Vue({
         }, 
 
         sendVote: function(){
-            socket.emit('vote', this.picked)
+            if(this.picked === ''){
+                statusAlerts('choose something')
+            }
+            else{
+                console.log("send vote to "+this.picked)
+                disableVoting()
+                socket.emit('vote', this.picked)
+            }
         }
     },
 
     created(){
         socket.on('update', (update)=>{
             this.updates.push(update)
+            this.$refs.updates.scrollToBottom()
         })
 
         socket.on('msg', (msg) => {
             this.messages.push(msg)
+            this.scrollToBottom()
         })
 
         socket.on('gameStats', (data)=>{
@@ -89,10 +143,15 @@ var field = new Vue({
 
         socket.on('voteAgainst', (voteAgainst) => {
             this.voteAgainst = voteAgainst
+            // this.picked=''
+            enableVoting()
+            unvote()
         })
 
         socket.on('sleep', ()=>{
             console.log("sleep")
+            enableVoting()
+            unvote()
             this.updates = []
             this.sleeping = true
         })
@@ -111,7 +170,10 @@ var field = new Vue({
         })
         
         socket.on('unvote', ()=>{
-            picked = ''
+            // this.picked = ''
+            this.updates = []
+            enableVoting()
+            unvote()
         })
     }
 });
@@ -119,26 +181,39 @@ var field = new Vue({
 var landing = new Vue({
     el: '#landing',
     data:{
-        nickname:'m1',
-        roomname:'h1',
-        password:'h1',
+        nickname:'',
+        roomname:'',
+        password:'',
         status:'', 
         visible: true
     },
     methods:{
         createRoom: function(){
-            socket.emit('createRoom', {
-                room: this.roomname,
-                nickname: this.nickname,
-                password: this.password
-            })
+            if(this.nickname === ''){
+                statusAlerts("people with no name are not allowed")
+            }
+            else if(this.roomname === ''){
+                statusAlerts("room name is needed to create a room")
+            }
+            else{
+                socket.emit('createRoom', {
+                    room: this.roomname,
+                    nickname: this.nickname,
+                    password: this.password
+                })
+            }
         },
         joinRoom: function(){
-            socket.emit('joinRoom', {
-                room: this.roomname,
-                nickname: this.nickname,
-                password: this.password
-            })
+            if(this.nickname === ''){
+                statusAlerts("people with no name are not allowed")
+            }
+            else{
+                socket.emit('joinRoom', {
+                    room: this.roomname,
+                    nickname: this.nickname,
+                    password: this.password
+                })
+            }
         },
         proceedToLobby: function(){
             proceedToLobby()
@@ -211,6 +286,45 @@ var lobby = new Vue({
         })
     }
 })
+function disableVoting(){
+    try{
+        var pick = document.getElementById("pick");
+        pick.disabled = true
+        var radios = document.getElementsByName( "voting" );
+        for( i = 0; i < radios.length; i++ ) {
+        radios[i].disabled=true
+        }
+    }
+    catch(err){
+        console.log("unable to disable voting")
+    }
+    return null;
+}
+
+function enableVoting(){
+    try{
+        field.picked = ''
+        var pick = document.getElementById("pick");
+        pick.disabled = false
+        var radios = document.getElementsByName( "voting" );
+        for( i = 0; i < radios.length; i++ ) {
+        radios[i].disabled=false
+        }
+    }
+    catch(err){
+        console.log("unable to enable voting")
+    }
+    return null;
+}
+
+function unvote(){
+    field.picked=''
+    var radios = document.getElementsByName( "voting" );
+    for( i = 0; i < radios.length; i++ ) {
+       radios[i].checked=false
+    }
+    return null;
+}
 
 function proceedToLobby(){
     lobby.visible = true
@@ -234,7 +348,6 @@ $.notify.addStyle('statusAlerts', {
         "white-space": "nowrap",
         "background-color": "#091918",
         "padding": "15px",
-        "margin-top":"75px",
         "border": "1px solid #ff1010"
       },
       alert: {
@@ -242,6 +355,10 @@ $.notify.addStyle('statusAlerts', {
       }
     }
   });
+
+function getName(){
+    return nav.name
+}
 
 function setRole(role){
     nav.role = role
@@ -252,7 +369,7 @@ function setName(name){
 }
 
 function statusAlerts(message){
-    $('.notifyjs-corner').empty();
+    // $('.notifyjs-corner').empty();
     $.notify(message.toLowerCase(), {
         style: 'statusAlerts',
         className: 'alert'

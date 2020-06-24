@@ -4,9 +4,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <script src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.js'></script>
     <script src="https://unpkg.com/vue"></script>
+    <link rel="stylesheet" href="vue-virtual-scroller.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
         integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="style.scss">
+
+    <script language="javascript" type="text/javascript" src="vue-virtual-scroller.min.js"></script>
+    <script>
+
+        Vue.use(VueVirtualScroller);
+        Vue.component('DynamicScroller', VueVirtualScroller.DynamicScroller);
+        Vue.component('dynamicscroller', VueVirtualScroller.DynamicScroller);
+        Vue.component('dynamicscrolleritem', VueVirtualScroller.DynamicScrollerItem)
+    </script>
 </head>
 
 <body>
@@ -41,10 +51,10 @@
                         <div class='row d-flex justify-content-center'>
                             <button type="button" v-on:click="joinRoom" id="join-room"
                                 class="btn btn-block landing-button col-lg-5 col-md-10 col-sm-10 form-control">join
-                                room</button>
+                                room&#8594;</button>
                             <button type="button" v-on:click="createRoom"
                                 class="btn btn-block landing-button col-lg-5 col-md-10 col-sm-10 form-control">create
-                                room</button>
+                                room?</button>
                         </div>
                     </div>
                 </form>
@@ -56,33 +66,36 @@
     <div id='lobby' class='container' v-if='visible'>
         <div class='row'>
             <div class='col-lg-3 col-md-3 col-sm-12' style="text-align:center;margin:auto">configure: </div>
+
             <div class='col-lg-3 col-md-3 col-sm-12'>
                 <div class="Input" style="margin:auto">
-                    <input type="number" v-model="mafiaCount" class="Input-text form-control item" placeholder="#mafia">
+                    <input type="number" v-model="mafiaCount" class="Input-text form-control item" placeholder="#mafia"
+                        style="margin-top:10px;margin-bottom:10px;">
                     <label for="input" class="Input-label">#mafia</label>
                 </div>
             </div>
             <div class='col-lg-3 col-md-3 col-sm-12'>
                 <div class="Input" style="margin:auto">
                     <input type="number" v-model="detectiveCount" class="Input-text form-control item"
-                        placeholder="#detective">
+                        style="margin-top:10px;margin-bottom:10px;" placeholder="#detective">
                     <label for="input" class="Input-label">#detective</label>
                 </div>
             </div>
             <div class='col-lg-3 col-md-3 col-sm-12'>
                 <div class="Input" style="margin:auto">
                     <input type="number" v-model="healerCount" class="Input-text form-control item"
-                        placeholder="#healer">
+                        style="margin-top:10px;margin-bottom:10px;" placeholder="#healer">
                     <label for="input" class="Input-label">#healer</label>
                 </div>
             </div>
+
         </div>
         <div class="row d-flex justify-content-center" style="margin-top: 35px;">
             <ul class="col-lg-4 col-md-4 col-sm-6">
                 <div style="text-align: center;font-size: 25px;">
                     online:
                 </div>
-                <li v-for="player in players" style="font-size: 16px;">
+                <li v-for="player in players" style="font-size: 16px; margin-left: 20px;margin-top:10px">
                     {{ player }}
                 </li>
             </ul>
@@ -90,45 +103,104 @@
         <div class="row d-flex justify-content-center">
             <button type="button" v-on:click="startGame"
                 class="btn btn-block landing-button col-lg-3 col-md-3 col-sm-3  form-control" id="get_a_room">get a
-                village</button>
+                village &#8594;</button>
         </div>
     </div>
     </div>
 
     <div id='field' v-if='visible' class="container">
-        <div class="row sleeping">
-            {{sleeping}}
-        </div>
-
-        <div class="row battlefield" v-if="!sleeping">
-            <div class='col-lg-4 col-md-4 col-sm-4 chatroom'>
-                <div>
-                    <input type='text' v-model="textMessage" v-on:keyup.enter="sendMessage"></input>
-                    <button v-on:click="sendMessage" v-if="role!='spectator' && !gameOver">send</button>
-                    <p v-for="message in messages">
-                        {{message.nickname}}: {{ message.textMessage }}
-                    </p>
-                </div>
-            </div>
-            <div class='col-lg-4 col-md-4 col-sm-4 voteField' v-if="role!='spectator' && !gameOver">
-                <div>
-                <div v-for="player in voteAgainst">
-                    <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
-                    <label>{{ player.nickname }}</label>
-                </div>
-                <p>{{announcement}}</p>
-                <button v-on:click="sendVote">Send Vote</button>
-            </div>
-            </div>
-            <div class='col-lg-4 col-md-4 col-sm-4 updateField'>
-                <p v-for="update in updates">
-                     {{ update }}
-                </p>
-            </div>
+        <div class="row sleeping d-flex justify-content-center h-70" v-if="sleeping" style="width: 100%;">
+            
+                <img src="assets/sleep.png" class="sleeping d-flex justify-content-center col-lg-6 col-md-6 col-sm-12"/>
             
         </div>
-        <div class="row">
-            <button v-on:click="newGame" v-show='gameOver'>New Game</button>
+
+        <div class="row battlefield h-70" v-if="!sleeping">
+            <div class='col-lg-6 col-md-6 col-sm-12 h-100'>
+                <div id="chatroom" class="card h-70">
+                    <template>
+                        <DynamicScroller ref="scroller" :items="messages" :min-item-size="54" key-field='ts'
+                            class="scroller h-70" @resize="scrollToBottom()">
+                            <template v-slot="{ item, index, active }">
+                                <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[
+                          item.textMessage,
+                        ]" class="user" :data-index="ts">
+                                    <div class="text"
+                                        v-bind:class="{mytext: isMyMessage(item), otherText: !isMyMessage(item)}">
+                                        <div class="textsender" v-if="!isMyMessage(item)"
+                                            v-bind:class="{mytext: isMyMessage(item), otherText: !isMyMessage(item)}">
+                                            {{item.nickname}}</div>
+                                        <div class="textMessage">{{ item.textMessage }}</div>
+                                    </div>
+                                </DynamicScrollerItem>
+                            </template>
+                        </DynamicScroller>
+                    </template>
+                    <div class="row messageWriter">
+                        <input type="text" v-model="textMessage" class="Input-text form-control item"
+                            style="padding: 5px;" placeholder="type &amp; &#9166;" v-on:keyup.enter='sendMessage'
+                            :disabled="role === 'spectator' && !gameOver">
+                    </div>
+                </div>
+
+
+            </div>
+            <div class='col-lg-6 col-md-6 col-sm-12 h-100'>
+                
+                <div class="row d-flex justify-content-center voteField h-50" v-if="role!='spectator' && !gameOver" style="border-bottom: 1px solid #6D757D88">
+                    
+
+
+                        <DynamicScroller ref="voteAgainst" :items="voteAgainst" :min-item-size="54" class="scroller "
+                            @resize="scrollToBottom()" style="height: 80%;width:100%">
+                            <template v-slot="{ item, index, active }">
+                                <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[
+                          item.nickname,
+                        ]" class="row voteAgainst d-flex justify-content-center" :data-index="ts">
+
+                        <label><input name="voting" type="radio" v-bind:value="item.id" v-model="picked" class="strikethrough" style="display: none;">
+                                   <span class="strikethis"> {{ item.nickname }}
+                                </span>
+                                   </label>
+                                </DynamicScrollerItem>
+                            </template>
+                        </DynamicScroller>
+                        <div style="clear:both row">
+                        <button v-on:click="sendVote" style="width: 100%;border:0px" class="landing-button" id="pick">pick &#8613;</button>
+                    </div>
+
+
+                        <!-- <div v-for="player in voteAgainst">
+                            <input name="voting" type="radio" v-bind:value="player.id" v-model="picked">
+                            <label>{{ player.nickname }}</label>
+                        </div>
+                        <p>{{announcement}}</p> -->
+                        
+                    
+                </div>
+                <div class='row d-flex justify-content-center updateField h-50' v-if="!gameOver" style="margin-top: 5px; ; padding-top: 5px;">
+                    <DynamicScroller ref="updates" :items="updates" :min-item-size="54" key-field='ts'
+                        class="scroller col-lg-12 col-md-12 col-sm-12" @resize="scrollToBottom()">
+                        <template v-slot="{ item, index, active }">
+                            <DynamicScrollerItem :item="item" :active="active" :size-dependencies="[
+                          item,
+                        ]" class="updates" :data-index="ts">
+                                {{item}}
+                            </DynamicScrollerItem>
+                        </template>
+                    </DynamicScroller>
+
+
+                    <!-- <div v-for="update in updates" class="update col-lg-12 col-md-12 col-sm-12">
+                        {{ update }}
+                    </div> -->
+                </div>
+            </div>
+
+
+        </div>
+        <div class="col-lg-6 col-md-6 col-sm-12">
+            <button v-on:click="newGame" v-show='gameOver' class="landing-button" style="width: 100%;border:0px">new game?</button>
         </div>
     </div>
 </body>
