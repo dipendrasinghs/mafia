@@ -184,6 +184,7 @@ io.sockets.on('connection', function (socket) {
 	})
 
 	socket.on('vote', (person)=>{
+		if(!PLAYER_LIST[socket.id]) return
 		let player = PLAYER_LIST[socket.id]
 		let room = ROOM_LIST[player.room]
 		try{
@@ -203,6 +204,7 @@ io.sockets.on('connection', function (socket) {
 		}
 	})
 	socket.on('sendMsg', (msg) => {
+		if(!PLAYER_LIST[socket.id]) return
 		let player = PLAYER_LIST[socket.id]
 		let role = player.role
 		messageObj = {
@@ -234,10 +236,12 @@ io.sockets.on('connection', function (socket) {
 
 
 function newGame(socket){
+	if(!PLAYER_LIST[socket.id]) return
 	ROOM_LIST[PLAYER_LIST[socket.id].room].gameEvents.emit('newGame') 
 }
 
 function startGame(counts, socket){
+	if(!PLAYER_LIST[socket.id]) return
 	room = ROOM_LIST[PLAYER_LIST[socket.id].room]
 	if (room.lock){
 		socket.emit('startGameResponse', {
@@ -254,6 +258,7 @@ function startGame(counts, socket){
 }
 
 function startNewGame(socket){
+	if(!PLAYER_LIST[socket.id]) return
 	room = ROOM_LIST[PLAYER_LIST[socket.id].room]
 	room.lock = false
 	room.gameEvents.emit('newGame')
@@ -291,6 +296,7 @@ function createRoom(socket, data) {
 }
 
 function joinRoom(socket, data) {
+	
 	let roomName = data.room.trim()
 	let pass = data.password.trim()
 	let userName = data.nickname.trim()
