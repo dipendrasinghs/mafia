@@ -163,6 +163,10 @@ class Game {
             console.log("game over")
             this.over = true
             this.gameEvents.emit('gameOver', 'villagers')
+        } else if(this.daytime){
+            if(mafia == 1 && other == 1){
+                this.gameEvents.emit('gameOver', 'villagers')
+            }
         }
     }
 
@@ -187,6 +191,7 @@ class Game {
     }
 
     voteTime(role){
+        console.log("Votetime for "+role)
         this.votes = []
         let voteAgainst = []
         for(let p in this.players){
@@ -285,8 +290,8 @@ class Game {
     }
 
     mafiaWakesUp(){
-        if(Object.keys(this.roleMap['mafia']).length == 0) this.nextInFlow('mafia')
         console.log("mafia wake up")
+        if(Object.keys(this.roleMap['mafia']).length == 0) this.nextInFlow('mafia')
         this.sendTo('mafia', 'wakeup')
         // this.room.io.to(this.getAddresser('mafia')).emit('wakeup')
         this.gameEvents.emit('voteTime', 'mafia')
@@ -299,8 +304,8 @@ class Game {
     }
 
     healerWakesUp(){
-        if(Object.keys(this.roleMap['healer']).length == 0) this.nextInFlow('healer')
         console.log("wakeup to healer")
+        if(Object.keys(this.roleMap['healer']).length == 0) this.nextInFlow('healer')
         this.sendTo('healer', 'wakeup')
         // this.room.io.to(this.getAddresser('healer')).emit('wakeup')
         this.gameEvents.emit('voteTime', 'healer')
@@ -313,6 +318,7 @@ class Game {
     }
 
     detectiveWakesUp(){
+        console.log("wakeup to detective")
         if(Object.keys(this.roleMap['detective']).length == 0) this.nextInFlow('detective')
         console.log("wakeup to detective")
         this.sendTo('detective', 'wakeup')

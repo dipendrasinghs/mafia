@@ -29,6 +29,7 @@ let restartWarningMinute = 50
 let restartWarningSecond = 2
 
 var events = require('events');
+const { platform } = require('os');
 
 class Room {
 	constructor(name, pass) {
@@ -108,6 +109,23 @@ class Room {
 		})
 	}
 
+	someoneLeft(player, role){
+		console.log("player "+player.nickname+" has left and its daytime = "+this.game.daytime+" with player role"+role)
+		if(this.game.daytime){
+			this.game.gameEvents.emit('voteTime', 'all')
+		}
+		else{
+			if(role === 'mafia'){
+				this.game.gameEvents.emit('mafiaWakesUp')
+			}else if(role === 'detective'){
+				this.game.gameEvents.emit('detectiveWakesUp')
+			}else if(role === 'healer'){
+				this.game.gameEvents.emit('healerWakesUp')
+			}
+
+		}
+	}
+
 	getPlayerNames(){
 		let names = []
 		let players = this.players
@@ -166,18 +184,27 @@ io.sockets.on('connection', function (socket) {
 	})
 
 	socket.on('vote', (person)=>{
-		player = PLAYER_LIST[socket.id]
-		let msg = player.nickname+" chose "+PLAYER_LIST[person].nickname
-		if(ROOM_LIST[player.room].game.daytime){
-			ROOM_LIST[player.room].sendToAll('update', msg)
-		}
-		else{
-			io.to(player.room+player.role).emit('update', msg)
+		let player = PLAYER_LIST[socket.id]
+		let room = ROOM_LIST[player.room]
+		try{
+			let msg = player.nickname+" chose "+PLAYER_LIST[person].nickname
+			if(ROOM_LIST[player.room].game.daytime){
+				ROOM_LIST[player.room].sendToAll('update', msg)
+			}
+			else{
+				io.to(player.room+player.role).emit('update', msg)
+			}
+		}catch(err){
+			room.game.gameEvents.emit('voteTime', player.role)
+			room.game.votes = []
+			room.game.sendTo(player.role, 'unvote')
+			room.game.sendTo(player.role, 'announcement', "cant cast your vote, revote")
+			console.log("error occurred in voting" + err)
 		}
 	})
 	socket.on('sendMsg', (msg) => {
-		player = PLAYER_LIST[socket.id]
-		role = player.role
+		let player = PLAYER_LIST[socket.id]
+		let role = player.role
 		messageObj = {
 			from: socket.id,
 			ts: Date.now(),
@@ -317,9 +344,12 @@ setInterval(() => {
 function leaveRoom(socket) {
 	if (!PLAYER_LIST[socket.id]) return
 	let player = PLAYER_LIST[socket.id]
-	delete PLAYER_LIST[player.id]
-	delete ROOM_LIST[player.room].players[player.id]
 	let room = ROOM_LIST[player.room]
+	room.sendToAll('announcement', ':'+player.nickname+": has left the game, skipping turns")
+	let role = player.role
+	room.game.kill(player.id)
+	room.someoneLeft(player, role)
+	delete ROOM_LIST[player.room].players[player.id]
 	room.playersStats.emit('playerLeft', {
 		id: socket.id, 
 		room: player.room
@@ -333,8 +363,10 @@ function leaveRoom(socket) {
 	// }catch(err){
 	// 	console.log("room was not available to kill the game")
 	// }
+	
 	console.log(player.nickname+"left"+player.room)
 	socket.leave(player.room)
+	delete PLAYER_LIST[player.id]
 	socket.emit('leaveResponse', { success: true })
 }
 
