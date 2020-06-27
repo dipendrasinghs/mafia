@@ -165,6 +165,7 @@ class Game {
             this.gameEvents.emit('gameOver', 'villagers')
         } else if(this.daytime){
             if(mafia == 1 && other == 1){
+                this.over = true
                 this.gameEvents.emit('gameOver', 'villagers')
             }
         }

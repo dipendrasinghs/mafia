@@ -347,8 +347,13 @@ function leaveRoom(socket) {
 	let room = ROOM_LIST[player.room]
 	room.sendToAll('announcement', ':'+player.nickname+": has left the game, skipping turns")
 	let role = player.role
-	room.game.kill(player.id)
-	room.someoneLeft(player, role)
+	try{
+		room.game.kill(player.id)
+		room.someoneLeft(player, role)
+	}
+	catch(err){
+		console.log("game was not created so cannot kill "+player.id)
+	}
 	delete ROOM_LIST[player.room].players[player.id]
 	room.playersStats.emit('playerLeft', {
 		id: socket.id, 
