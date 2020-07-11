@@ -154,7 +154,7 @@ class Game {
                 other += 1
             }
         }
-        if (mafia > other){
+        if (mafia >= other){
             console.log("game over")
             this.over = true
             this.gameEvents.emit('gameOver', 'mafia')
@@ -166,7 +166,7 @@ class Game {
         } else if(this.daytime){
             if(mafia == 1 && other == 1){
                 this.over = true
-                this.gameEvents.emit('gameOver', 'villagers')
+                this.gameEvents.emit('gameOver', 'mafia')
             }
         }
     }
@@ -287,6 +287,7 @@ class Game {
             this.players[player].onDeathBed = false
         }
         this.sendTo('all', 'sleep')
+        this.sendTo('all', 'nighttime')
         this.gameEvents.emit('mafiaWakesUp')
     }
 
@@ -346,6 +347,7 @@ class Game {
         this.daytime = true
         console.log("wakeup to all")
         this.sendTo('all', 'wakeup')
+        this.sendTo('all', 'daytime')
         // this.room.sendToAll('wakeup')
         this.gameEvents.emit('voteTime', 'all')
 
@@ -374,6 +376,7 @@ class Game {
     }
 
     gameOver(winner){
+        this.votes = []
         this.unassignRoles()
         this.makeAnnouncement('all', ":"+winner+": have won the game")
         console.log("gameOver")

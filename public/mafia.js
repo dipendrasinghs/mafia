@@ -49,7 +49,24 @@ var field = new Vue({
         gameOver: false,
         picked: '',
         updates: [],
-        ts:''
+        ts:'',
+        daytime: false
+    },
+    computed: {
+        pickButtonText: function(){
+            if(this.daytime){
+                return "vote out"
+            }
+            else if(this.role === 'mafia'){
+                return 'assassinate'
+            }
+            else if(this.role === 'detective'){
+                return 'suspect'
+            }
+            else if(this.role === 'healer'){
+                return 'heal'
+            }
+        }
     },
     mounted(){
         role = ''
@@ -61,7 +78,8 @@ var field = new Vue({
         announcement = '' 
         gameOver = ''
         picked = ''
-        updates = []
+        updates = [],
+        daytime = false
     },
     // watch:{
     //     picked: function(){
@@ -118,6 +136,14 @@ var field = new Vue({
     },
 
     created(){
+        socket.on('daytime', ()=>{
+            this.daytime = true
+        })
+
+        socket.on('nighttime',()=>{
+            this.daytime = false
+        })
+
         socket.on('update', (update)=>{
             this.updates.push(update)
             this.$refs.updates.scrollToBottom()
@@ -318,6 +344,7 @@ function enableVoting(){
 }
 
 function unvote(){
+    field.updates = [] 
     field.picked=''
     var radios = document.getElementsByName( "voting" );
     for( i = 0; i < radios.length; i++ ) {
